@@ -86,9 +86,10 @@ final class ShelfModel {
 
     init() {
         let storedDirection = UserDefaults.standard.string(forKey: ShelfDefaults.direction) ?? ""
+        let allowUntrusted = UserDefaults.standard.bool(forKey: ShelfDefaults.allowUntrusted)
         readingDirection = ReadingDirection(rawValue: storedDirection) ?? .leftToRight
-        allowUntrustedCertificates = UserDefaults.standard.bool(forKey: ShelfDefaults.allowUntrusted)
-        trustDelegate.allowUntrusted = allowUntrustedCertificates
+        allowUntrustedCertificates = allowUntrusted
+        trustDelegate.allowUntrusted = allowUntrusted
 
         let configuration = URLSessionConfiguration.default
         configuration.timeoutIntervalForRequest = 60

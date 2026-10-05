@@ -30,6 +30,28 @@ final class ServerAddressTests: XCTestCase {
         XCTAssertThrowsError(try ServerAddress(userInput: "   "))
         XCTAssertThrowsError(try ServerAddress(userInput: "http://"))
     }
+
+    /// Called without `await` so a regression to actor isolation fails this file at compile time.
+    func testImageAndPDFURLsDoNotNeedTheActor() throws {
+        let address = try ServerAddress(userInput: "https://kavita.example")
+        let client = KavitaClient(address: address, apiKey: "stored-key")
+        XCTAssertEqual(
+            client.seriesCoverURL(seriesId: 4, apiKey: "shelfkey")?.absoluteString,
+            "https://kavita.example/api/Image/series-cover?seriesId=4&apiKey=shelfkey"
+        )
+        XCTAssertEqual(
+            client.libraryCoverURL(libraryId: 2, apiKey: "shelfkey")?.absoluteString,
+            "https://kavita.example/api/Image/library-cover?libraryId=2&apiKey=shelfkey"
+        )
+        XCTAssertEqual(
+            client.readerPageURL(chapterId: 9, page: 0, apiKey: "shelfkey")?.absoluteString,
+            "https://kavita.example/api/Reader/image?chapterId=9&page=0&apiKey=shelfkey"
+        )
+        XCTAssertEqual(
+            client.pdfURL(chapterId: 9, apiKey: "shelfkey")?.absoluteString,
+            "https://kavita.example/api/Reader/pdf?chapterId=9&apiKey=shelfkey"
+        )
+    }
 }
 
 final class DecodingTests: XCTestCase {

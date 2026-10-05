@@ -308,7 +308,8 @@ final class ShelfModel {
 
     func pdfData(chapterId: Int) async throws -> Data {
         try await withClient { client in
-            guard let url = client.pdfURL(chapterId: chapterId) else {
+            let apiKey = await client.currentAPIKey
+            guard let url = client.pdfURL(chapterId: chapterId, apiKey: apiKey) else {
                 throw KavitaError.invalidServerURL
             }
             return try await client.data(from: url)
@@ -318,7 +319,8 @@ final class ShelfModel {
     func pageImage(chapterId: Int, page: Int) async -> UIImage? {
         do {
             return try await withClient { client in
-                guard let url = client.readerPageURL(chapterId: chapterId, page: page) else { return nil }
+                let apiKey = await client.currentAPIKey
+                guard let url = client.readerPageURL(chapterId: chapterId, page: page, apiKey: apiKey) else { return nil }
                 if let cached = self.images.object(forKey: url as NSURL) {
                     return cached
                 }
@@ -333,11 +335,15 @@ final class ShelfModel {
     }
 
     func coverImage(seriesId: Int) async -> UIImage? {
-        await remoteImage { $0.seriesCoverURL(seriesId: seriesId) }
+        await remoteImage { client, apiKey in
+            client.seriesCoverURL(seriesId: seriesId, apiKey: apiKey)
+        }
     }
 
     func libraryImage(libraryId: Int) async -> UIImage? {
-        await remoteImage { $0.libraryCoverURL(libraryId: libraryId) }
+        await remoteImage { client, apiKey in
+            client.libraryCoverURL(libraryId: libraryId, apiKey: apiKey)
+        }
     }
 
     func epubScheme() -> String {
@@ -347,10 +353,12 @@ final class ShelfModel {
         return address.origin.scheme ?? "https"
     }
 
-    private func remoteImage(_ url: (KavitaClient) -> URL?) async -> UIImage? {
+    /// `makeURL` stays synchronous. It only calls nonisolated URL builders, after the API key has been copied off the actor.
+    private func remoteImage(_ makeURL: (KavitaClient, String) -> URL?) async -> UIImage? {
         do {
             return try await withClient { client in
-                guard let url = url(client) else { return nil }
+                let apiKey = await client.currentAPIKey
+                guard let url = makeURL(client, apiKey) else { return nil }
                 if let cached = self.images.object(forKey: url as NSURL) {
                     return cached
                 }

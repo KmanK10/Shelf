@@ -5,7 +5,8 @@ import FoundationNetworking
 
 /// Calls confirmed against Kavita OpenAPI 0.9.1.10 (`develop`) and the matching controllers.
 public actor KavitaClient {
-    public let address: ServerAddress
+    /// Immutable server origin. URL builders below are `nonisolated` and only read this.
+    public nonisolated let address: ServerAddress
     private let session: URLSession
     private var token: String
     private var apiKey: String
@@ -212,21 +213,23 @@ public actor KavitaClient {
         try await adjacentChapter(path: "Reader/prev-chapter", seriesId: seriesId, volumeId: volumeId, chapterId: chapterId)
     }
 
-    public func seriesCoverURL(seriesId: Int) -> URL? {
+    /// Image and PDF URLs are pure functions of the server address and an API key.
+    /// The key is an argument so these can be called synchronously from outside the actor.
+    public nonisolated func seriesCoverURL(seriesId: Int, apiKey: String) -> URL? {
         address.endpoint("Image/series-cover", query: [
             URLQueryItem(name: "seriesId", value: String(seriesId)),
             URLQueryItem(name: "apiKey", value: apiKey)
         ])
     }
 
-    public func libraryCoverURL(libraryId: Int) -> URL? {
+    public nonisolated func libraryCoverURL(libraryId: Int, apiKey: String) -> URL? {
         address.endpoint("Image/library-cover", query: [
             URLQueryItem(name: "libraryId", value: String(libraryId)),
             URLQueryItem(name: "apiKey", value: apiKey)
         ])
     }
 
-    public func readerPageURL(chapterId: Int, page: Int) -> URL? {
+    public nonisolated func readerPageURL(chapterId: Int, page: Int, apiKey: String) -> URL? {
         address.endpoint("Reader/image", query: [
             URLQueryItem(name: "chapterId", value: String(chapterId)),
             URLQueryItem(name: "page", value: String(page)),
@@ -234,7 +237,7 @@ public actor KavitaClient {
         ])
     }
 
-    public func pdfURL(chapterId: Int) -> URL? {
+    public nonisolated func pdfURL(chapterId: Int, apiKey: String) -> URL? {
         address.endpoint("Reader/pdf", query: [
             URLQueryItem(name: "chapterId", value: String(chapterId)),
             URLQueryItem(name: "apiKey", value: apiKey)
